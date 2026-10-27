@@ -1,0 +1,232 @@
+/* =========================================================
+   Squish — a translucent 3D desktop stress ball
+   UI font: Fredoka. Settings panel is themeable (dark / light).
+   ========================================================= */
+
+:root {
+  --font: "Fredoka", ui-rounded, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --accent: #8c9eff;
+
+  /* Backdrop used only when opened as a file (browser demo) */
+  --bg-1: #2a2150;
+  --bg-2: #141229;
+  --bg-3: #0c0a1b;
+
+  /* --- Settings panel theme tokens (dark default) --- */
+  --p-bg:        rgba(26, 24, 46, 0.94);
+  --p-ink:       #f1efff;
+  --p-dim:       rgba(241, 239, 255, 0.58);
+  --p-line:      rgba(255, 255, 255, 0.08);
+  --ctl-bg:      rgba(255, 255, 255, 0.07);
+  --ctl-brd:     rgba(255, 255, 255, 0.14);
+  --ctl-hover:   rgba(255, 255, 255, 0.13);
+  --track:       rgba(255, 255, 255, 0.15);
+  --seg-ink-on:  #1a1630;
+  --gear-bg:     rgba(255, 255, 255, 0.1);
+  --gear-ink:    #fff;
+}
+
+/* Light theme overrides (set on <body data-theme="light">) */
+body[data-theme="light"] {
+  --p-bg:        rgba(248, 247, 252, 0.96);
+  --p-ink:       #241f3a;
+  --p-dim:       rgba(36, 31, 58, 0.55);
+  --p-line:      rgba(20, 16, 40, 0.1);
+  --ctl-bg:      rgba(20, 16, 40, 0.05);
+  --ctl-brd:     rgba(20, 16, 40, 0.14);
+  --ctl-hover:   rgba(20, 16, 40, 0.09);
+  --track:       rgba(20, 16, 40, 0.14);
+  --seg-ink-on:  #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  background: transparent;          /* desktop-pet mode: only the ball shows */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Backdrop only when opened as a plain file (not the floating app) */
+body.has-bg {
+  background:
+    radial-gradient(1200px 820px at 22% 8%, var(--bg-1), transparent 60%),
+    radial-gradient(1000px 900px at 85% 100%, #1d1740, transparent 55%),
+    linear-gradient(160deg, var(--bg-2), var(--bg-3));
+}
+body.has-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(900px 700px at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.4));
+}
+
+/* In pet mode the gear hides until you hover the top-right corner */
+body.pet .gear { opacity: 0; transition: opacity 0.2s ease; }
+body.pet .gear:hover,
+body.pet.show-gear .gear { opacity: 1; }
+
+/* 3D canvas + input layer */
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+#stage { position: fixed; inset: 0; z-index: 2; touch-action: none; cursor: grab; }
+#stage.grabbing { cursor: grabbing; }
+
+/* Sparkles */
+.spark {
+  position: absolute; top: 0; left: 0;
+  width: 10px; height: 10px; margin: -5px 0 0 -5px;
+  border-radius: 50%; background: #fff; pointer-events: none; z-index: 3;
+}
+
+/* Gear button */
+.gear {
+  position: fixed; top: 16px; right: 16px; z-index: 7;
+  width: 46px; height: 46px; font-size: 20px;
+  display: grid; place-items: center;
+  background: var(--gear-bg); color: var(--gear-ink);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%; cursor: pointer;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.gear:hover { background: rgba(255, 255, 255, 0.16); transform: rotate(40deg); }
+.gear:active { transform: scale(0.92); }
+
+/* First-run hint */
+.hint {
+  position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
+  text-align: center; font-size: 15px; font-weight: 500;
+  color: rgba(255, 255, 255, 0.72); z-index: 4;
+  pointer-events: none; transition: opacity 0.6s ease; padding: 0 16px;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
+}
+.hint b { color: #fff; font-weight: 700; }
+.hint.gone { opacity: 0; }
+
+/* ---------------- Settings drawer ---------------- */
+.scrim {
+  position: fixed; inset: 0; z-index: 8;
+  background: rgba(8, 7, 18, 0.42);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+}
+.panel {
+  position: fixed; top: 0; right: 0; z-index: 9;
+  width: min(366px, 90vw); height: 100%;
+  padding: 22px 24px 28px; overflow-y: auto;
+  color: var(--p-ink);
+  background: var(--p-bg);
+  border-left: 1px solid var(--ctl-brd);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.34);
+  animation: slideIn 0.26s cubic-bezier(.2,.9,.3,1);
+}
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.panel-head h2 { margin: 0; font-size: 23px; font-weight: 700; letter-spacing: 0.2px; }
+
+.icon-btn {
+  width: 34px; height: 34px; font-size: 14px;
+  color: var(--p-ink);
+  background: var(--ctl-bg); border: 1px solid var(--ctl-brd);
+  border-radius: 50%; cursor: pointer;
+}
+.icon-btn:hover { background: var(--ctl-hover); }
+
+.field { padding: 15px 0; border-bottom: 1px solid var(--p-line); }
+.field:last-of-type { border-bottom: none; }
+.field > label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 11px; }
+.field.row { display: flex; align-items: center; justify-content: space-between; }
+.field.row > label { margin-bottom: 0; }
+.field small { color: var(--p-dim); font-weight: 500; }
+
+/* Segmented control */
+.segmented {
+  display: flex; padding: 4px; gap: 2px;
+  background: var(--ctl-bg); border: 1px solid var(--ctl-brd);
+  border-radius: 14px;
+}
+.segmented button {
+  flex: 1; font: inherit; font-size: 13.5px; font-weight: 600;
+  color: var(--p-dim); background: none; border: none;
+  padding: 9px 10px; border-radius: 11px; cursor: pointer;
+  transition: color 0.15s ease, background 0.2s ease;
+}
+.segmented button.active { color: var(--seg-ink-on); background: var(--accent); }
+
+/* Picker grid */
+.picker { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.sw {
+  aspect-ratio: 1; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; display: grid; place-items: center;
+  font-size: 22px; line-height: 1; background: var(--c, #888);
+  transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sw:hover { transform: scale(1.12); }
+.sw.active { border-color: var(--p-ink); transform: scale(1.14); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
+
+.custom-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 13px; font-size: 13px; color: var(--p-dim);
+}
+.custom-row input[type="color"] {
+  width: 46px; height: 30px; padding: 2px;
+  border: 1px solid var(--ctl-brd); border-radius: 9px;
+  background: none; cursor: pointer;
+}
+.custom-row.hidden { display: none; }
+
+/* Range sliders */
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  height: 8px; border-radius: 999px; background: var(--track); outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 3px solid #fff;
+}
+
+/* Toggle switches */
+.switch {
+  -webkit-appearance: none; appearance: none; position: relative;
+  width: 48px; height: 27px; border-radius: 999px;
+  background: var(--track); cursor: pointer; transition: background 0.2s ease;
+}
+.switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 21px; height: 21px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.2s ease;
+}
+.switch:checked { background: var(--accent); }
+.switch:checked::after { transform: translateX(21px); }
+
+.pill {
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--p-ink);
+  background: var(--ctl-bg); border: 1px solid var(--ctl-brd);
+  border-radius: 13px; padding: 12px 16px; cursor: pointer;
+}
+.pill:hover { background: var(--ctl-hover); }
+.pill.wide { width: 100%; }
+
+.panel-foot {
+  padding-top: 18px; font-size: 13px; color: var(--p-dim); text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { animation: none; }
+  .gear, .sw { transition: none; }
+}

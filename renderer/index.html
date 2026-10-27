@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Squish</title>
+  <meta name="description" content="A squishy, translucent 3D stress ball for your desktop. Spin it, squish it, bounce it." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- 3D canvas -->
+  <canvas id="scene"></canvas>
+
+  <!-- Settings button -->
+  <button id="gearBtn" class="gear" aria-label="Settings" title="Settings">⚙️</button>
+
+  <!-- Transparent layer that catches pointer input and holds the sparkles -->
+  <div id="stage"></div>
+
+  <!-- First-run hint -->
+  <div id="hint" class="hint">
+    <b>Click</b> to bounce&nbsp;·&nbsp;<b>Click fast</b> to go wild&nbsp;·&nbsp;<b>Drag</b> to spin &amp; squish
+  </div>
+
+  <!-- Settings drawer -->
+  <div id="scrim" class="scrim" hidden></div>
+  <aside id="panel" class="panel" hidden aria-label="Settings">
+    <header class="panel-head">
+      <h2>Settings</h2>
+      <button id="closeBtn" class="icon-btn" aria-label="Close">✕</button>
+    </header>
+
+    <section class="field">
+      <label>Appearance</label>
+      <div class="segmented" id="themeSeg">
+        <button data-theme="dark" class="active">Dark</button>
+        <button data-theme="light">Light</button>
+      </div>
+    </section>
+
+    <section class="field">
+      <label>Type</label>
+      <div class="segmented" id="typeSeg">
+        <button data-type="ball" class="active">Ball</button>
+        <button data-type="fruit">Fruit</button>
+        <button data-type="veggie">Veggie</button>
+      </div>
+    </section>
+
+    <section class="field">
+      <label id="pickerLabel">Colour</label>
+      <div id="picker" class="picker"></div>
+      <div id="customRow" class="custom-row">
+        <span>Custom</span>
+        <input type="color" id="customColor" value="#8C9EFF" aria-label="Custom colour" />
+      </div>
+    </section>
+
+    <section class="field">
+      <label for="sizeR">Size</label>
+      <input type="range" id="sizeR" min="0" max="100" value="100" />
+    </section>
+
+    <section class="field">
+      <label for="transp">Transparency</label>
+      <input type="range" id="transp" min="0" max="100" value="55" />
+    </section>
+
+    <section class="field">
+      <label for="motion">Motion speed <small>(lower = calmer)</small></label>
+      <input type="range" id="motion" min="0" max="100" value="55" />
+    </section>
+
+    <section class="field row">
+      <label for="faceTgl">Show a smile</label>
+      <input type="checkbox" id="faceTgl" class="switch" checked />
+    </section>
+
+    <section class="field row">
+      <label for="soundTgl">Sound</label>
+      <input type="checkbox" id="soundTgl" class="switch" checked />
+    </section>
+
+    <section class="field row">
+      <label for="aotTgl">Keep on top <small id="aotNote">(desktop app)</small></label>
+      <input type="checkbox" id="aotTgl" class="switch" />
+    </section>
+
+    <section class="field">
+      <button id="calmBtn" class="pill wide">🧘 Calm it down</button>
+    </section>
+
+    <footer class="panel-foot">
+      <span id="counter">0 squishes</span>
+    </footer>
+  </aside>
+
+  <script src="vendor/three.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
